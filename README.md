@@ -11,7 +11,6 @@
 ## 📌 Quick Links
 
 * 🌐 **Live Website**: [https://udyog-mitra-peach.vercel.app](https://udyog-mitra-peach.vercel.app)
-* 📜 **Master Architecture Blueprint**: [MAHA_SETU_MASTER_BLUEPRINT.md](./MAHA_SETU_MASTER_BLUEPRINT.md)
 * 🚀 **Interactive Demo Personas**: [Jump to Role Guide](#-explore-the-4-roles-live-demo-guide)
 * 💻 **Local Installation**: [Run Locally in 5 Minutes](#-quickstart-guide-run-locally-in-5-minutes)
 
@@ -191,7 +190,6 @@ udyog-mitra/
 │           ├── schema.prisma         # Relational database models
 │           └── seed.ts               # Realistic demo seed data
 │
-├── MAHA_SETU_MASTER_BLUEPRINT.md     # 1,100+ line master architecture blueprint
 ├── package.json                      # Workspace configuration
 └── README.md                         # Project documentation
 ```

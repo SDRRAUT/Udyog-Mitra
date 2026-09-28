@@ -25,6 +25,9 @@ service-account*.json
 auth*.json
 token*.json
 secrets/
+*BLUEPRINT*.md
+*blueprint*.md
+MAHA_SETU_MASTER_BLUEPRINT.md
 
 # ------------------------------------------------------------------------------
 # 2. NON-IMPORTANT ASSETS: SCREENSHOTS & TEST IMAGES
