@@ -1,0 +1,886 @@
+// UDYOG MARG - Complete Prisma Schema
+// Maharashtra Setu - AI-Powered Industrial Approval Platform
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===================== ENUMS =====================
+
+enum UserRole {
+  ENTREPRENEUR
+  DEPARTMENT_OFFICER
+  HOD
+  DIC_OFFICER
+  STATE_ADMIN
+  GRIEVANCE_OFFICER
+  SYSTEM
+}
+
+enum EntityType {
+  PROPRIETORSHIP
+  PARTNERSHIP
+  LLP
+  PRIVATE_LIMITED
+  PUBLIC_LIMITED
+  COOPERATIVE
+  SOCIETY
+  OPC
+}
+
+enum BusinessStage {
+  PRE_ESTABLISHMENT
+  ESTABLISHMENT
+  EXPANSION
+  DIVERSIFICATION
+}
+
+enum ApplicationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_PROCESS
+  QUERY_RAISED
+  INSPECTION_PENDING
+  APPROVED
+  REJECTED
+  RETURNED
+  WITHDRAWN
+  COMPLETED
+}
+
+enum ApprovalStatus {
+  PENDING
+  DRAFT
+  SUBMITTED
+  ASSIGNED
+  UNDER_SCRUTINY
+  QUERY_RAISED
+  INSPECTION_SCHEDULED
+  INSPECTION_COMPLETED
+  RECOMMENDED
+  APPROVED
+  REJECTED
+  RETURNED
+  WITHDRAWN
+}
+
+enum DocumentStatus {
+  PENDING
+  UPLOADED
+  PRE_VALIDATED
+  UNDER_REVIEW
+  VERIFIED
+  REJECTED
+  EXPIRED
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING_REVIEW
+  VERIFIED
+  REJECTED
+  VERIFIED_REUSABLE
+}
+
+enum QueryStatus {
+  OPEN
+  RESPONDED
+  RESOLVED
+  CLOSED
+}
+
+enum InspectionStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  RESCHEDULED
+}
+
+enum InspectionType {
+  SINGLE
+  JOINT
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum SLAStatus {
+  ON_TRACK
+  AT_RISK
+  BREACHED
+}
+
+enum GrievanceStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  CLOSED
+  ESCALATED
+}
+
+enum GrievancePriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum NotificationType {
+  APPLICATION_SUBMITTED
+  APPLICATION_STATUS_UPDATED
+  QUERY_RAISED
+  QUERY_REPLIED
+  INSPECTION_SCHEDULED
+  INSPECTION_COMPLETED
+  SLA_AT_RISK
+  SLA_BREACHED
+  ESCALATED
+  APPROVED
+  REJECTED
+  RETURNED
+  COMPLIANCE_DUE
+  SCHEME_ELIGIBLE
+  GRIEVANCE_UPDATED
+  SYSTEM_ALERT
+}
+
+enum FileType {
+  PDF
+  IMAGE
+  DOCUMENT
+  SPREADSHEET
+  OTHER
+}
+
+enum SchemeCategory {
+  CAPITAL_SUBSIDY
+  INTEREST_SUBSIDY
+  ELECTRICITY_DUTY_EXEMPTION
+  STAMP_DUTY_EXEMPTION
+  MSME_INCENTIVE
+  WOMEN_ENTREPRENEUR
+  SC_ST_SCHEME
+  EXPORT_PROMOTION
+  INFRASTRUCTURE
+}
+
+enum IndustryPollution {
+  WHITE
+  GREEN
+  ORANGE
+  RED
+}
+
+enum LocationType {
+  MIDC
+  NON_MIDC_INDUSTRIAL
+  INDUSTRIAL_PARK
+  RURAL
+  URBAN
+  SEZ
+  ECOLOGICALLY_SENSITIVE
+  COASTAL
+}
+
+enum WorkflowAction {
+  SUBMIT
+  ASSIGN
+  START_SCRUTINY
+  RAISE_QUERY
+  REPLY_QUERY
+  SCHEDULE_INSPECTION
+  COMPLETE_INSPECTION
+  RECOMMEND
+  APPROVE
+  REJECT
+  RETURN
+  WITHDRAW
+  ESCALATE
+  SLA_BREACH
+  COMMENT
+}
+
+enum EscalationLevel {
+  L1_OFFICER
+  L2_HOD
+  L3_DIC
+  L4_STATE_ADMIN
+}
+
+enum ComplianceType {
+  CTO_RENEWAL
+  FACTORY_LICENSE_RENEWAL
+  FIRE_NOC_RENEWAL
+  LABOUR_LICENSE_RENEWAL
+  GST_RETURN
+  EPF_RETURN
+  ESI_RETURN
+  CONSENT_RENEWAL
+  PERIODIC_RETURN
+  ANNUAL_RETURN
+}
+
+enum ComplianceStatus {
+  TRACKING
+  DUE
+  OVERDUE
+  COMPLETED
+  WAIVED
+}
+
+enum ApplicabilityType {
+  MANDATORY
+  CONDITIONAL
+  NOT_APPLICABLE
+}
+
+// ===================== CORE MODELS =====================
+
+model State {
+  id          String       @id @default(cuid())
+  name        String
+  code        String       @unique
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  districts   District[]
+
+  @@map("states")
+}
+
+model District {
+  id          String       @id @default(cuid())
+  name        String
+  code        String       @unique
+  stateId     String
+  state       State        @relation(fields: [stateId], references: [id])
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  users       User[]
+  departments Department[]
+  applications Application[]
+  grievances  Grievance[]
+  analyticsSnapshots AnalyticsSnapshot[]
+
+  @@index([stateId])
+  @@map("districts")
+}
+
+model Department {
+  id              String      @id @default(cuid())
+  code            String      @unique
+  name            String
+  shortName       String
+  description     String?
+  districtId      String?
+  district        District?   @relation(fields: [districtId], references: [id])
+  hodUserId       String?
+  slaConfigJson   Json?       // SLA override config
+  isActive        Boolean     @default(true)
+  color           String?     // For UI badges
+  iconCode        String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  users           User[]
+  approvalMasters ApprovalMaster[]
+  applicationApprovals ApplicationApproval[]
+  inspections     Inspection[]
+  grievances      Grievance[]
+
+  @@index([districtId])
+  @@map("departments")
+}
+
+model User {
+  id               String      @id @default(cuid())
+  email            String?     @unique
+  mobile           String?     @unique
+  name             String
+  role             UserRole
+  isActive         Boolean     @default(true)
+  isVerified       Boolean     @default(false)
+  departmentId     String?
+  department       Department? @relation(fields: [departmentId], references: [id])
+  districtId       String?
+  district         District?   @relation(fields: [districtId], references: [id])
+  lastActive       DateTime?
+  otpCode          String?
+  otpExpiresAt     DateTime?
+  refreshTokens    Json        @default("[]")
+  avatarUrl        String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  deletedAt        DateTime?
+
+  entrepreneurProfile EntrepreneurProfile?
+  applications        Application[]
+  assignedApprovals   ApplicationApproval[] @relation("AssignedOfficer")
+  raisedQueries       Query[]              @relation("QueryRaisedBy")
+  repliedQueries      Query[]              @relation("QueryRepliedBy")
+  notifications       Notification[]
+  auditLogs           AuditLog[]
+  grievancesCreated   Grievance[]          @relation("GrievanceCreatedBy")
+  grievancesAssigned  Grievance[]          @relation("GrievanceAssignedTo")
+
+  @@index([role])
+  @@index([departmentId])
+  @@index([districtId])
+  @@index([email])
+  @@index([mobile])
+  @@map("users")
+}
+
+model EntrepreneurProfile {
+  id                  String      @id @default(cuid())
+  userId              String      @unique
+  user                User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entityType          EntityType?
+  cin                 String?
+  udyamNo             String?
+  gstNo               String?
+  panNo               String?
+  aadhaarNo           String?     // Masked
+  businessName        String?
+  addressLine1        String?
+  addressLine2        String?
+  city                String?
+  pincode             String?
+  promoterName        String?
+  promoterMobile      String?
+  promoterEmail       String?
+  promoterAadhaar     String?
+  isWomenEntrepreneur Boolean     @default(false)
+  isSCST              Boolean     @default(false)
+  isMSME              Boolean     @default(false)
+  isProfileComplete   Boolean     @default(false)
+  kycVerified         Boolean     @default(false)
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  @@map("entrepreneur_profiles")
+}
+
+// ===================== APPROVAL MASTER =====================
+
+model ApprovalMaster {
+  id                  String      @id @default(cuid())
+  code                String      @unique
+  name                String
+  shortName           String?
+  description         String?
+  departmentId        String
+  department          Department  @relation(fields: [departmentId], references: [id])
+  isMandatoryBase     Boolean     @default(false)
+  isParallelEligible  Boolean     @default(true)
+  slaDays             Int         @default(30)
+  requiredDocs        Json        @default("[]") // Array of {docCode, name, description, isMandatory, acceptedFormats, maxSizeMB}
+  dependencies        Json        @default("[]") // Array of approvalMaster codes that must be completed first
+  applicabilityRules  Json?       // JSON conditions for applicability
+  feeStructure        Json?       // Fee calculation rules
+  formUrl             String?     // If specific form required
+  actReference        String?     // Legal act reference
+  isActive            Boolean     @default(true)
+  version             Int         @default(1)
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  applicationApprovals ApplicationApproval[]
+  checklistItems       ChecklistItem[]
+
+  @@index([departmentId])
+  @@map("approval_masters")
+}
+
+model ChecklistRule {
+  id                  String      @id @default(cuid())
+  ruleId              String      @unique
+  name                String
+  description         String?
+  conditions          Json        // JSONLogic conditions
+  applicableApprovals Json        @default("[]") // Array of ApprovalMaster codes
+  mandatory           Boolean     @default(true)
+  priority            Int         @default(10)
+  explanation         String?
+  sourceRef           String?
+  isActive            Boolean     @default(true)
+  version             Int         @default(1)
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  @@index([isActive, priority])
+  @@map("checklist_rules")
+}
+
+// ===================== APPLICATION =====================
+
+model Application {
+  id                  String            @id @default(cuid())
+  applicationNo       String            @unique @default(cuid())
+  userId              String
+  user                User              @relation(fields: [userId], references: [id])
+  districtId          String
+  district            District          @relation(fields: [districtId], references: [id])
+
+  // CAF Data (denormalized for performance)
+  businessName        String?
+  entityType          EntityType?
+  businessStage       BusinessStage?
+  sector              String?
+  subSector           String?
+  locationType        LocationType?
+  talukaName          String?
+  addressLine1        String?
+  addressLine2        String?
+  pincode             String?
+
+  // Project Details (JSON for flexibility)
+  projectDetailsJson  Json?
+
+  // Risk
+  riskScore           Int               @default(0)
+  riskLevel           RiskLevel         @default(LOW)
+  requiresDetailedScrutiny Boolean      @default(false)
+  fastTrackEligible   Boolean           @default(false)
+  delayRiskScore      Int               @default(0)
+
+  // Status
+  overallStatus       ApplicationStatus @default(DRAFT)
+  currentStage        String?
+  readinessScore      Int               @default(0)
+
+  // Timeline (JSON array of events)
+  timeline            Json              @default("[]")
+
+  // SLA
+  submittedAt         DateTime?
+  completedAt         DateTime?
+  slaBreached         Boolean           @default(false)
+
+  // CAF profile snapshot
+  cafSnapshot         Json?
+
+  isDeleted           Boolean           @default(false)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  approvals           ApplicationApproval[]
+  documents           Document[]
+  grievances          Grievance[]
+  schemeEligibilities SchemeEligibility[]
+  complianceItems     ComplianceItem[]
+  checklistItems      ChecklistItem[]
+
+  @@index([userId])
+  @@index([districtId])
+  @@index([overallStatus])
+  @@index([riskScore])
+  @@index([riskLevel])
+  @@index([submittedAt])
+  @@index([createdAt])
+  @@map("applications")
+}
+
+model ChecklistItem {
+  id                  String            @id @default(cuid())
+  applicationId       String
+  application         Application       @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  approvalMasterId    String
+  approvalMaster      ApprovalMaster    @relation(fields: [approvalMasterId], references: [id])
+  applicability       ApplicabilityType
+  explanation         String?
+  sourceRef           String?
+  priority            Int               @default(10)
+  dependencies        Json              @default("[]")
+  createdAt           DateTime          @default(now())
+
+  @@unique([applicationId, approvalMasterId])
+  @@index([applicationId])
+  @@map("checklist_items")
+}
+
+model ApplicationApproval {
+  id                  String          @id @default(cuid())
+  applicationId       String
+  application         Application     @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  approvalMasterId    String
+  approvalMaster      ApprovalMaster  @relation(fields: [approvalMasterId], references: [id])
+  departmentId        String
+  department          Department      @relation(fields: [departmentId], references: [id])
+  assignedOfficerId   String?
+  assignedOfficer     User?           @relation("AssignedOfficer", fields: [assignedOfficerId], references: [id])
+
+  status              ApprovalStatus  @default(PENDING)
+  slaStatus           SLAStatus       @default(ON_TRACK)
+  slaDays             Int             @default(30)
+  slaDueAt            DateTime?
+  slaBreached         Boolean         @default(false)
+  slaBreachedAt       DateTime?
+
+  escalationLevel     EscalationLevel @default(L1_OFFICER)
+  escalationDueAt     DateTime?
+
+  startedAt           DateTime?
+  completedAt         DateTime?
+  queryCount          Int             @default(0)
+
+  // Workflow history JSON array
+  workflowHistory     Json            @default("[]")
+
+  officerRemarks      String?
+  rejectionReason     String?
+
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  queries             Query[]
+  inspections         Inspection[]
+  documents           Document[]
+  slaBreachLogs       SLABreachLog[]
+
+  @@index([applicationId])
+  @@index([departmentId])
+  @@index([assignedOfficerId])
+  @@index([status])
+  @@index([slaStatus])
+  @@index([slaDueAt])
+  @@map("application_approvals")
+}
+
+// ===================== DOCUMENTS =====================
+
+model Document {
+  id                    String             @id @default(cuid())
+  applicationId         String
+  application           Application        @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationApprovalId String?
+  applicationApproval   ApplicationApproval? @relation(fields: [applicationApprovalId], references: [id])
+  uploadedById          String?
+  docCode               String             // e.g., SITE_PLAN, UDYAM_CERT
+  docName               String
+  fileUrl               String
+  cloudinaryId          String?
+  thumbnailUrl          String?
+  mimeType              String
+  fileSize              Int                // bytes
+  fileType              FileType           @default(PDF)
+  status                DocumentStatus     @default(UPLOADED)
+  verificationStatus    VerificationStatus @default(UNVERIFIED)
+  verifiedById          String?
+  verifiedAt            DateTime?
+  verificationRemarks   String?
+  prevalidationFlags    Json               @default("[]")
+  isReusable            Boolean            @default(false)
+  isDeleted             Boolean            @default(false)
+  expiresAt             DateTime?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  @@index([applicationId])
+  @@index([applicationApprovalId])
+  @@index([docCode])
+  @@map("documents")
+}
+
+// ===================== QUERIES =====================
+
+model Query {
+  id                    String            @id @default(cuid())
+  applicationApprovalId String
+  applicationApproval   ApplicationApproval @relation(fields: [applicationApprovalId], references: [id], onDelete: Cascade)
+  raisedById            String
+  raisedBy              User              @relation("QueryRaisedBy", fields: [raisedById], references: [id])
+  repliedById           String?
+  repliedBy             User?             @relation("QueryRepliedBy", fields: [repliedById], references: [id])
+  queryText             String            @db.Text
+  replyText             String?           @db.Text
+  status                QueryStatus       @default(OPEN)
+  attachmentUrls        Json              @default("[]")
+  replyAttachmentUrls   Json              @default("[]")
+  raisedAt              DateTime          @default(now())
+  repliedAt             DateTime?
+  resolvedAt            DateTime?
+  closedAt              DateTime?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  @@index([applicationApprovalId])
+  @@index([status])
+  @@map("queries")
+}
+
+// ===================== INSPECTIONS =====================
+
+model JointInspection {
+  id              String        @id @default(cuid())
+  applicationId   String
+  scheduledAt     DateTime
+  venue           String?
+  status          InspectionStatus @default(SCHEDULED)
+  reportShared    Boolean       @default(false)
+  reportUrl       String?
+  notes           String?
+  attendeesJson   Json          @default("[]")
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  inspections     Inspection[]
+
+  @@map("joint_inspections")
+}
+
+model Inspection {
+  id                    String            @id @default(cuid())
+  applicationApprovalId String
+  applicationApproval   ApplicationApproval @relation(fields: [applicationApprovalId], references: [id])
+  departmentId          String
+  department            Department        @relation(fields: [departmentId], references: [id])
+  jointInspectionId     String?
+  jointInspection       JointInspection?  @relation(fields: [jointInspectionId], references: [id])
+  type                  InspectionType    @default(SINGLE)
+  status                InspectionStatus  @default(SCHEDULED)
+  scheduledAt           DateTime?
+  completedAt           DateTime?
+  venue                 String?
+  officerIds            Json              @default("[]")
+  reportUrl             String?
+  reportNotes           String?
+  cancelReason          String?
+  rescheduleReason      String?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  @@index([applicationApprovalId])
+  @@index([departmentId])
+  @@index([status])
+  @@index([scheduledAt])
+  @@map("inspections")
+}
+
+// ===================== SLA =====================
+
+model SLABreachLog {
+  id                    String            @id @default(cuid())
+  applicationApprovalId String
+  applicationApproval   ApplicationApproval @relation(fields: [applicationApprovalId], references: [id])
+  breachedAt            DateTime
+  escalatedToLevel      EscalationLevel
+  notifiedUserIds       Json              @default("[]")
+  createdAt             DateTime          @default(now())
+
+  @@index([applicationApprovalId])
+  @@map("sla_breach_logs")
+}
+
+// ===================== SCHEMES =====================
+
+model SchemeMaster {
+  id                String          @id @default(cuid())
+  code              String          @unique
+  name              String
+  shortName         String?
+  description       String?         @db.Text
+  category          SchemeCategory
+  benefitType       String
+  benefitValue      String?
+  eligibilityRules  Json            // JSONLogic conditions
+  applicationUrl    String?
+  authority         String?
+  isActive          Boolean         @default(true)
+  validFrom         DateTime?
+  validTo           DateTime?
+  maxBeneficiaries  Int?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  eligibilities     SchemeEligibility[]
+
+  @@map("scheme_masters")
+}
+
+model SchemeEligibility {
+  id            String        @id @default(cuid())
+  applicationId String
+  application   Application   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  schemeId      String
+  scheme        SchemeMaster  @relation(fields: [schemeId], references: [id])
+  isEligible    Boolean       @default(false)
+  matchPercent  Int           @default(0)
+  reasons       Json          @default("[]")
+  applied       Boolean       @default(false)
+  appliedAt     DateTime?
+  evaluatedAt   DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@unique([applicationId, schemeId])
+  @@index([applicationId])
+  @@map("scheme_eligibilities")
+}
+
+// ===================== GRIEVANCES =====================
+
+model Grievance {
+  id              String            @id @default(cuid())
+  ticketNo        String            @unique
+  applicationId   String?
+  application     Application?      @relation(fields: [applicationId], references: [id])
+  districtId      String?
+  district        District?         @relation(fields: [districtId], references: [id])
+  departmentId    String?
+  department      Department?       @relation(fields: [departmentId], references: [id])
+  createdById     String
+  createdBy       User              @relation("GrievanceCreatedBy", fields: [createdById], references: [id])
+  assignedToId    String?
+  assignedTo      User?             @relation("GrievanceAssignedTo", fields: [assignedToId], references: [id])
+  subject         String
+  description     String            @db.Text
+  priority        GrievancePriority @default(MEDIUM)
+  status          GrievanceStatus   @default(OPEN)
+  category        String?
+  escalationLevel EscalationLevel   @default(L1_OFFICER)
+  escalationDueAt DateTime?
+  resolutionTime  Int?              // minutes
+  resolvedAt      DateTime?
+  closedAt        DateTime?
+  attachmentUrls  Json              @default("[]")
+  timeline        Json              @default("[]")
+  slaDays         Int               @default(7)
+  slaDueAt        DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([createdById])
+  @@index([status])
+  @@index([priority])
+  @@index([escalationLevel])
+  @@map("grievances")
+}
+
+// ===================== COMPLIANCE =====================
+
+model ComplianceItem {
+  id                String          @id @default(cuid())
+  applicationId     String
+  application       Application     @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  approvalMasterId  String?
+  complianceType    ComplianceType
+  name              String
+  description       String?
+  dueDate           DateTime
+  reminderDays      Json            @default("[30,15,7,3,1]")
+  status            ComplianceStatus @default(TRACKING)
+  completedAt       DateTime?
+  renewalDocUrl     String?
+  notes             String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([applicationId])
+  @@index([dueDate])
+  @@index([status])
+  @@map("compliance_items")
+}
+
+// ===================== NOTIFICATIONS =====================
+
+model Notification {
+  id          String            @id @default(cuid())
+  userId      String
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        NotificationType
+  title       String
+  body        String?
+  link        String?
+  isRead      Boolean           @default(false)
+  readAt      DateTime?
+  metadata    Json              @default("{}")
+  channels    Json              @default("[\"IN_APP\"]")
+  createdAt   DateTime          @default(now())
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+// ===================== AUDIT LOG =====================
+
+model AuditLog {
+  id          String    @id @default(cuid())
+  userId      String?
+  user        User?     @relation(fields: [userId], references: [id])
+  action      String
+  resource    String
+  resourceId  String?
+  before      Json?
+  after       Json?
+  ip          String?
+  userAgent   String?
+  metadata    Json      @default("{}")
+  createdAt   DateTime  @default(now())
+
+  @@index([userId])
+  @@index([resource, resourceId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ===================== KNOWLEDGE BASE (RAG) =====================
+
+model KnowledgeChunk {
+  id          String    @id @default(cuid())
+  title       String?
+  content     String    @db.Text
+  source      String?
+  category    String?
+  language    String    @default("en") // en, hi, mr
+  metadata    Json      @default("{}")
+  embedding   Json?     // Stored embedding vector (for demo without ChromaDB)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([category])
+  @@index([language])
+  @@map("knowledge_chunks")
+}
+
+// ===================== ANALYTICS =====================
+
+model AnalyticsSnapshot {
+  id              String    @id @default(cuid())
+  scope           String    // 'state', 'district', 'department'
+  scopeId         String?
+  districtId      String?
+  district        District? @relation(fields: [districtId], references: [id])
+  metricsJson     Json
+  snapshotAt      DateTime  @default(now())
+
+  @@index([scope, scopeId])
+  @@index([snapshotAt])
+  @@map("analytics_snapshots")
+}
+
+// ===================== RULE VERSIONS =====================
+
+model RuleVersion {
+  id          String    @id @default(cuid())
+  ruleType    String    // 'CHECKLIST_RULE' | 'APPROVAL_MASTER'
+  ruleId      String
+  version     Int
+  data        Json
+  changedById String?
+  changeNote  String?
+  createdAt   DateTime  @default(now())
+
+  @@index([ruleType, ruleId])
+  @@map("rule_versions")
+}

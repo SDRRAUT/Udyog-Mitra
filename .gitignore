@@ -1,0 +1,54 @@
+# Dependencies
+node_modules/
+*/node_modules/
+*/*/node_modules/
+.pnp
+.pnp.js
+
+# Testing
+/coverage
+coverage/
+playwright-report.json
+test-results/
+
+# Next.js & Build outputs
+.next/
+*/.next/
+*/*/.next/
+out/
+build/
+dist/
+*/dist/
+*/*/dist/
+
+# Database files
+.pgdata/
+*/.pgdata/
+*/*/.pgdata/
+*.sqlite
+*.sqlite3
+*.db
+
+# TypeScript
+*.tsbuildinfo
+
+# Debug logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Environment files (exclude secrets)
+.env
+.env*.local
+!.env.example
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Turbopack & IDE
+.turbo
+.idea/
+.vscode/
