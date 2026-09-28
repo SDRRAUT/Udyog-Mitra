@@ -1,17 +1,70 @@
-# Dependencies
+# ==============================================================================
+# UDYOG MITRA — .gitignore
+# Rules for Secret & Sensitive Data, Non-Important Assets, & Build Artifacts
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. SECRETS, CREDENTIALS, & PRIVATE KEYS (CRITICAL)
+# ------------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.env
+*.pem
+*.key
+*.cert
+*.crt
+*.pfx
+*.p12
+*.id_rsa
+*.id_ed25519
+credentials.json
+client_secret*.json
+service-account*.json
+*.keystore
+auth*.json
+token*.json
+secrets/
+
+# ------------------------------------------------------------------------------
+# 2. NON-IMPORTANT ASSETS: SCREENSHOTS & TEST IMAGES
+# ------------------------------------------------------------------------------
+screenshots/
+*/screenshots/
+*.png
+*.webp.video
+*.gif
+!apps/web/public/**
+
+# ------------------------------------------------------------------------------
+# 3. NON-IMPORTANT SCRIPTS & LOCAL TEST SUITES
+# ------------------------------------------------------------------------------
+verify_aceternity_upgrades.js
+scripts/
+apps/api/test-db.js
+
+# ------------------------------------------------------------------------------
+# 4. TESTING & COVERAGE REPORTS
+# ------------------------------------------------------------------------------
+coverage/
+/coverage
+test-results/
+playwright-report/
+playwright-report.json
+blob-report/
+
+# ------------------------------------------------------------------------------
+# 5. DEPENDENCIES
+# ------------------------------------------------------------------------------
 node_modules/
 */node_modules/
 */*/node_modules/
 .pnp
 .pnp.js
 
-# Testing
-/coverage
-coverage/
-playwright-report.json
-test-results/
-
-# Next.js & Build outputs
+# ------------------------------------------------------------------------------
+# 6. BUILD OUTPUTS & BUNDLERS
+# ------------------------------------------------------------------------------
 .next/
 */.next/
 */*/.next/
@@ -20,35 +73,41 @@ build/
 dist/
 */dist/
 */*/dist/
+.turbo/
 
-# Database files
+# ------------------------------------------------------------------------------
+# 7. DATABASE DATA & BINARY DUMPS
+# ------------------------------------------------------------------------------
 .pgdata/
 */.pgdata/
 */*/.pgdata/
 *.sqlite
 *.sqlite3
 *.db
+*.dump
+*.sql
 
-# TypeScript
-*.tsbuildinfo
-
-# Debug logs
+# ------------------------------------------------------------------------------
+# 8. LOGS & DIAGNOSTICS
+# ------------------------------------------------------------------------------
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# Environment files (exclude secrets)
-.env
-.env*.local
-!.env.example
+# ------------------------------------------------------------------------------
+# 9. TYPESCRIPT & CACHES
+# ------------------------------------------------------------------------------
+*.tsbuildinfo
+*.cache
 
-# OS files
+# ------------------------------------------------------------------------------
+# 10. OS & IDE ARTIFACTS
+# ------------------------------------------------------------------------------
 .DS_Store
 Thumbs.db
-
-# Turbopack & IDE
-.turbo
 .idea/
 .vscode/
+*.sublime-project
+*.sublime-workspace
